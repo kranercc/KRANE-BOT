@@ -14,5 +14,5 @@ CONFIG = {
 
     "shoot_inside_min_range": 30,
     'tend_to_aim_at_head': True,
-    'snap_back_to_reality': True,
+    'snap_back_to_reality': False,
 }
