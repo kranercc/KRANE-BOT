@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import krane_utils
 import os
+import multiprocessing
 
 CLASS_NAMES = []
 with open("model/coco.names", 'r') as f:
@@ -30,34 +31,44 @@ SCREEN_CENTER_COORDS = (
 block_shooting = False
 last_frame = "trash"
 
-def analyze_to_shoot(frame_copy):
-    global block_shooting
-    if not block_shooting:
-        block_shooting = True
-        result = model(frame_copy)
-        data = result.xyxy[0]
-        if len(data) > 0:
-            data = data[0]
-            xmin = int(data[0])
-            ymin = int(data[1])
-            xmax = int(data[2])
-            ymax = int(data[3])
-            confidence = data[4]
-            class_id = int(data[5])
-            if class_id == CONFIG['object_class_id'] and confidence > CONFIG['confidence']:
-                aiming_x = (xmin + xmax) // 2 - frame_center[
-                    0]  # aiming_x is the difference between the center of the screen and the center of the object
-                aiming_y = (ymin + ymax) // 2 - frame_center[
-                    1]  # aiming_y is the difference between the center of the screen and the center of the object
-                if CONFIG['tend_to_aim_at_head']:
-                    aiming_y = aiming_y - (ymax - ymin) // 3
-                cv2.rectangle(last_frame, (xmin, ymin), (xmax, ymax), (100, 0, 0), 2)
-                # threading.Thread(target=controls.aim_and_shoot, args=(aiming_x, aiming_y)).start()
-                controls.aim_and_shoot(aiming_x, aiming_y)
-        block_shooting = False
-    else:
-        print("Got call but skipping")
+def calculate_chunk(chunk):
+    try:
+        start_time = time()
+        result = model(chunk)
+        end_time = time()
+        print("Time: " + str(end_time - start_time))
+    except:
+        return None
+    return result
 
+
+def analyze_to_shoot(frame_copy):
+    global block_shooting, top_thread_running, bottom_thread_running, Thread_Pool
+    frame_center = (frame_copy.shape[1] // 2, frame_copy.shape[0] // 2)
+
+    result = model(frame_copy)
+    data = result.xyxy[0]
+    if len(data) > 0:
+        data = data[0]
+        xmin = int(data[0])
+        ymin = int(data[1])
+        xmax = int(data[2])
+        ymax = int(data[3])
+        confidence = data[4]
+        class_id = int(data[5])
+        if class_id == CONFIG['object_class_id'] and confidence > CONFIG['confidence']:
+            aiming_x = (xmin + xmax) // 2 - frame_center[
+                0]  # aiming_x is the difference between the center of the screen and the center of the object
+            aiming_y = (ymin + ymax) // 2 - frame_center[
+                1]  # aiming_y is the difference between the center of the screen and the center of the object
+            if CONFIG['tend_to_aim_at_head']:
+                aiming_y = aiming_y - (ymax - ymin) // 3
+            cv2.rectangle(last_frame, (xmin, ymin), (xmax, ymax), (100, 0, 0), 2)
+            # threading.Thread(target=controls.aim_and_shoot, args=(aiming_x, aiming_y)).start()
+            if not block_shooting:
+                block_shooting = True
+                controls.aim_and_shoot(aiming_x, aiming_y)
+            block_shooting = False
 
 def th_grab_screen():
     global last_frame
@@ -83,8 +94,6 @@ threading.Thread(target=th_preview).start()
 while True:
     if krane_utils.is_game_window_focused():
         start_time = time()
-
-        frame_center = (last_frame.shape[1] // 2, last_frame.shape[0] // 2)
 
         analyze_to_shoot(last_frame)
 
