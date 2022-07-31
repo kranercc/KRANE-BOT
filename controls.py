@@ -53,6 +53,9 @@ def listen_for_mouse_click():
     with pynput.mouse.Listener(on_click=click_listenr_logic) as listener:
         listener.join()
 
+def listen_for_keyboard_press():
+    with pynput.keyboard.Listener(on_press=keyboard_listener_logic) as listener:
+        listener.join()
 
 def click_listenr_logic(x, y, button, pressed):
     if button == CONFIG["aim_key"]:
@@ -65,5 +68,16 @@ def click_listenr_logic(x, y, button, pressed):
     return True
 
 
+def keyboard_listener_logic(key):
+    try:
+        if key.char == CONFIG["aim_key"]:
+            CONFIG['is_aiming'] = not CONFIG['is_aiming']
+            print(CONFIG['is_aiming'])
+    except:
+        pass
+    return True
+
 import threading
 threading.Thread(target=listen_for_mouse_click).start()
+
+threading.Thread(target=listen_for_keyboard_press).start()

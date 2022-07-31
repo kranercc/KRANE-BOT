@@ -8,7 +8,7 @@ CONFIG = {
     "window_position": (0, 0),
     "confidence": 0.5,
     'object_class_id': 0,
-    'aim_key': pynput.mouse.Button.right,
+    'aim_key': 'f',
     'is_aiming': False,
     "threshold": 0.5,
 

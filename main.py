@@ -1,6 +1,7 @@
 import sys
 import threading
 from time import time, sleep
+
 from CONFIG import CONFIG
 import controls
 import cv2
@@ -16,7 +17,7 @@ with open("model/coco.names", 'r') as f:
     for line in f:
         CLASS_NAMES.append(line.strip())
 
-model = torch.hub.load('ultralytics/yolov5', 'yolov5n')  # or yolov5n - yolov5x6, custom
+model = torch.hub.load("ultralytics/yolov5", "yolov5n")
 # model = torch.hub.load("ultralytics/yolov5", 'custom',
 #                        path="C:/Users/iacob/Desktop/trainer/yolov5/runs/train/exp6/weights/best.pt")
 device = torch.device('cuda')
@@ -57,14 +58,9 @@ def analyze_to_shoot(frame_copy):
         confidence = data[4]
         class_id = int(data[5])
         if class_id == CONFIG['object_class_id'] and confidence > CONFIG['confidence']:
-            aiming_x = (xmin + xmax) // 2 - frame_center[
-                0]  # aiming_x is the difference between the center of the screen and the center of the object
-            aiming_y = (ymin + ymax) // 2 - frame_center[
-                1]  # aiming_y is the difference between the center of the screen and the center of the object
-            if CONFIG['tend_to_aim_at_head']:
-                aiming_y = aiming_y - (ymax - ymin) // 3
+            aiming_x = ((xmin + xmax) // 2) - frame_center[0]
+            aiming_y = ((ymin + ymax) // 2) - frame_center[1]
             cv2.rectangle(last_frame, (xmin, ymin), (xmax, ymax), (100, 0, 0), 2)
-            # threading.Thread(target=controls.aim_and_shoot, args=(aiming_x, aiming_y)).start()
             if not block_shooting:
                 block_shooting = True
                 controls.aim_and_shoot(aiming_x, aiming_y)
